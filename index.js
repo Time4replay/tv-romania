@@ -241,14 +241,18 @@ builder.defineCatalogHandler(({ extra }) => {
   const search = extra && extra.search ? extra.search.toLowerCase() : null;
   const list = search ? CHANNELS.filter(c => c.name.toLowerCase().includes(search)) : CHANNELS;
   return Promise.resolve({
-    metas: list.map(c => ({ id: c.id, type: 'tv', name: c.name, poster: c.logo, posterShape: 'square', logo: c.logo, genres: [c.group], description: `📺 ${c.name} — Live` }))
+    metas: list.map(c => {
+      const logo = `${BASE_URL}/logo/${c.id}`;
+      return { id: c.id, type: 'tv', name: c.name, poster: logo, posterShape: 'square', logo: logo, genres: [c.group], description: `📺 ${c.name} — Live` };
+    })
   });
 });
 
 builder.defineMetaHandler(({ id }) => {
   const ch = CHANNELS.find(c => c.id === id);
   if (!ch) return Promise.resolve({ meta: null });
-  return Promise.resolve({ meta: { id: ch.id, type: 'tv', name: ch.name, poster: ch.logo, logo: ch.logo, genres: [ch.group] } });
+  const logo = `${BASE_URL}/logo/${ch.id}`;
+  return Promise.resolve({ meta: { id: ch.id, type: 'tv', name: ch.name, poster: logo, logo: logo, genres: [ch.group] } });
 });
 
 builder.defineStreamHandler(({ id }) => {
@@ -258,9 +262,173 @@ builder.defineStreamHandler(({ id }) => {
   return Promise.resolve({ streams: [{ url: proxyUrl, title: `📺 ${ch.name} — Live HD`, name: 'TV România' }] });
 });
 
+// ─── SVG Logo generator ───────────────────────────────────────────────────────
+function makeSVG(line1, line2, bg, fg = 'white') {
+  if (line2) {
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" rx="20" fill="${bg}"/><text x="100" y="90" font-family="Arial Black,Arial" font-size="52" font-weight="900" text-anchor="middle" fill="${fg}">${line1}</text><text x="100" y="155" font-family="Arial Black,Arial" font-size="52" font-weight="900" text-anchor="middle" fill="${fg}">${line2}</text></svg>`;
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" rx="20" fill="${bg}"/><text x="100" y="125" font-family="Arial Black,Arial" font-size="65" font-weight="900" text-anchor="middle" fill="${fg}">${line1}</text></svg>`;
+}
+
+const LOGOS = {
+  'ro-tv-protv':            makeSVG('PRO', 'TV', '#e31e24'),
+  'ro-tv-protvint':         makeSVG('PRO TV', 'INT', '#e31e24'),
+  'ro-tv-proarena':         makeSVG('PRO', 'Arena', '#c41230'),
+  'ro-tv-antena1':          makeSVG('Antena', '1', '#d40000'),
+  'ro-tv-antena3':          makeSVG('Antena', '3 CNN', '#c00000'),
+  'ro-tv-antenastars':      makeSVG('Antena', 'Stars', '#8b0000'),
+  'ro-tv-antenaint':        makeSVG('Antena', 'INT', '#d40000'),
+  'ro-tv-antennasport':     makeSVG('Antena', 'Sport', '#d40000'),
+  'ro-tv-hbo':              makeSVG('HBO', null, '#000000'),
+  'ro-tv-hbo-alt':          makeSVG('HBO', null, '#111111'),
+  'ro-tv-hbo2':             makeSVG('HBO', '2', '#1a1a1a'),
+  'ro-tv-hbo3':             makeSVG('HBO', '3', '#222222'),
+  'ro-tv-primatv':          makeSVG('Prima', 'TV', '#0066cc'),
+  'ro-tv-primacomedy':      makeSVG('Prima', 'Comedy', '#0052a3'),
+  'ro-tv-primanews':        makeSVG('Prima', 'News', '#003d7a'),
+  'ro-tv-primaworld':       makeSVG('Prima', 'World', '#004080'),
+  'ro-tv-digisport1':       makeSVG('DIGI', 'Sport 1', '#ff6600'),
+  'ro-tv-digisport2':       makeSVG('DIGI', 'Sport 2', '#e55c00'),
+  'ro-tv-digisport3':       makeSVG('DIGI', 'Sport 3', '#cc5200'),
+  'ro-tv-digisport4':       makeSVG('DIGI', 'Sport 4', '#b34700'),
+  'ro-tv-primasp1':         makeSVG('Prima', 'Sport 1', '#0066cc'),
+  'ro-tv-primasp2':         makeSVG('Prima', 'Sport 2', '#0052a3'),
+  'ro-tv-primasp3':         makeSVG('Prima', 'Sport 3', '#003d7a'),
+  'ro-tv-primasp4':         makeSVG('Prima', 'Sport 4', '#004080'),
+  'ro-tv-primasp5':         makeSVG('Prima', 'Sport 5', '#003366'),
+  'ro-tv-prima4k':          makeSVG('Prima', 'Sport 4K', '#002952'),
+  'ro-tv-eurosport1':       makeSVG('Euro', 'Sport 1', '#003399'),
+  'ro-tv-eurosport2':       makeSVG('Euro', 'Sport 2', '#002277'),
+  'ro-tv-ppv1':             makeSVG('PPV', '1', '#333333'),
+  'ro-tv-ppv2':             makeSVG('PPV', '2', '#333333'),
+  'ro-tv-ppv3':             makeSVG('PPV', '3', '#333333'),
+  'ro-tv-tvrsport':         makeSVG('TVR', 'Sport', '#003399'),
+  'ro-tv-realitateasportiva': makeSVG('Real.', 'Sport', '#cc0000'),
+  'ro-tv-sportextra':       makeSVG('Sport', 'Extra', '#444444'),
+  'ro-tv-kisstv':           makeSVG('KISS', 'TV', '#ff0066'),
+  'ro-tv-mezzo':            makeSVG('Mezzo', null, '#6600cc'),
+  'ro-tv-mtv80':            makeSVG('MTV', '80', '#000000'),
+  'ro-tv-musicchannel':     makeSVG('Music', 'Channel', '#cc0066'),
+  'ro-tv-taraf':            makeSVG('Taraf', 'TV', '#cc6600'),
+  'ro-tv-etno':             makeSVG('Etno', 'TV', '#996600'),
+  'ro-tv-balcan':           makeSVG('Balcan', 'TV', '#336600'),
+  'ro-tv-boomtv':           makeSVG('Boom', 'TV', '#ff3300'),
+  'ro-tv-traditional':      makeSVG('Trad.', 'TV', '#663300'),
+  'ro-tv-partymix':         makeSVG('Party', 'Mix', '#9900cc'),
+  'ro-tv-impacttv':         makeSVG('Impact', 'TV', '#cc0000'),
+  'ro-tv-dancetv':          makeSVG('Dance', 'TV', '#6600ff'),
+  'ro-tv-magictv':          makeSVG('Magic', 'TV', '#cc00cc'),
+  'ro-tv-tvr-folclor':      makeSVG('TVR', 'Folclor', '#003399'),
+  'ro-tv-natgeo':           makeSVG('Nat', 'Geo', '#ffcc00', '#000000'),
+  'ro-tv-natgeowild':       makeSVG('Nat Geo', 'Wild', '#e6b800', '#000000'),
+  'ro-tv-animalplanet':     makeSVG('Animal', 'Planet', '#006600'),
+  'ro-tv-discovery':        makeSVG('Disc.', null, '#0099cc'),
+  'ro-tv-bbcearth':         makeSVG('BBC', 'Earth', '#006600'),
+  'ro-tv-viasatnature':     makeSVG('Viasat', 'Nature', '#006633'),
+  'ro-tv-viasathistory':    makeSVG('Viasat', 'History', '#663300'),
+  'ro-tv-viasatexplor':     makeSVG('Viasat', 'Explorer', '#336699'),
+  'ro-tv-viasatkino':       makeSVG('Viasat', 'Kino', '#660066'),
+  'ro-tv-history':          makeSVG('History', null, '#663300'),
+  'ro-tv-descopera':        makeSVG('Desc.', null, '#006699'),
+  'ro-tv-lovenature':       makeSVG('Love', 'Nature', '#009933'),
+  'ro-tv-fishinghunting':   makeSVG('Fish &', 'Hunt', '#336600'),
+  'ro-tv-digiworld':        makeSVG('Digi', 'World', '#ff6600'),
+  'ro-tv-digianimalworld':  makeSVG('Digi', 'Animal', '#339900'),
+  'ro-tv-exploris':         makeSVG('Exploris', null, '#006699'),
+  'ro-tv-tlc':              makeSVG('TLC', null, '#cc0066'),
+  'ro-tv-hgtv':             makeSVG('HGTV', null, '#009933'),
+  'ro-tv-crimeinv':         makeSVG('Crime', '+Inv', '#330000'),
+  'ro-tv-idinvesti':        makeSVG('ID', 'Invest', '#333333'),
+  'ro-tv-acasa':            makeSVG('Acasa', 'TV', '#cc0066'),
+  'ro-tv-acasagold':        makeSVG('Acasa', 'Gold', '#cc9900'),
+  'ro-tv-amc':              makeSVG('AMC', null, '#000000'),
+  'ro-tv-atomic':           makeSVG('Atomic', 'TV', '#ff3300'),
+  'ro-tv-asiatv':           makeSVG('Asia', 'TV', '#cc0000'),
+  'ro-tv-axn':              makeSVG('AXN', null, '#003399'),
+  'ro-tv-axnwhite':         makeSVG('AXN', 'White', '#336699'),
+  'ro-tv-axnblack':         makeSVG('AXN', 'Black', '#000033'),
+  'ro-tv-axnspin':          makeSVG('AXN', 'Spin', '#003366'),
+  'ro-tv-b1':               makeSVG('B1', 'TV', '#003399'),
+  'ro-tv-bbcfirst':         makeSVG('BBC', 'First', '#cc0000'),
+  'ro-tv-bean':             makeSVG('Bean', 'TV', '#ff6600'),
+  'ro-tv-beautyon':         makeSVG('Beauty', 'On', '#cc0066'),
+  'ro-tv-bestof':           makeSVG('Best', 'Of TV', '#660066'),
+  'ro-tv-cameraasc':        makeSVG('Camera', 'Asc.', '#333333'),
+  'ro-tv-cartoonnetwork':   makeSVG('CN', null, '#cc0000'),
+  'ro-tv-cartoonito':       makeSVG('Cartoon', 'ito', '#ff6600'),
+  'ro-tv-cinemaraton':      makeSVG('Cine', 'Maraton', '#660033'),
+  'ro-tv-cinemaratonplus':  makeSVG('CineMar', 'Plus', '#660033'),
+  'ro-tv-cinemaratonmoldova': makeSVG('CineMar', 'Moldova', '#660033'),
+  'ro-tv-cinemax':          makeSVG('Cinemax', null, '#000000'),
+  'ro-tv-cinemax2':         makeSVG('Cinemax', '2', '#111111'),
+  'ro-tv-cinewow':          makeSVG('Cine', 'Wow', '#660066'),
+  'ro-tv-comedycentral':    makeSVG('Comedy', 'Central', '#ffcc00', '#000000'),
+  'ro-tv-digi24':           makeSVG('Digi', '24', '#cc0000'),
+  'ro-tv-digilife':         makeSVG('Digi', 'Life', '#ff6600'),
+  'ro-tv-disneychannel':    makeSVG('Disney', null, '#003399'),
+  'ro-tv-disneyjunior':     makeSVG('Disney', 'Jr', '#003399'),
+  'ro-tv-diva':             makeSVG('Diva', null, '#990066'),
+  'ro-tv-dizi':             makeSVG('Dizi', null, '#cc0000'),
+  'ro-tv-duk':              makeSVG('Duk', 'TV', '#ff6600'),
+  'ro-tv-ent':              makeSVG('ENT', null, '#333333'),
+  'ro-tv-epicdrama':        makeSVG('Epic', 'Drama', '#330033'),
+  'ro-tv-euronews':         makeSVG('Euro', 'News', '#003399'),
+  'ro-tv-favorit':          makeSVG('Favorit', 'TV', '#cc6600'),
+  'ro-tv-filmbox':          makeSVG('Film', 'Box', '#330033'),
+  'ro-tv-filmboxstars':     makeSVG('FilmBox', 'Stars', '#660033'),
+  'ro-tv-filmboxfamily':    makeSVG('FilmBox', 'Family', '#993300'),
+  'ro-tv-filmboxpremium':   makeSVG('FilmBox', 'Prem.', '#330066'),
+  'ro-tv-filmboxextra':     makeSVG('FilmBox', 'Extra', '#330033'),
+  'ro-tv-filmcafe':         makeSVG('Film', 'Cafe', '#663300'),
+  'ro-tv-filmmania':        makeSVG('Film', 'Mania', '#990033'),
+  'ro-tv-filmnow':          makeSVG('Film', 'Now', '#330066'),
+  'ro-tv-happy':            makeSVG('Happy', 'Channel', '#ff6600'),
+  'ro-tv-jimjam':           makeSVG('Jim', 'Jam', '#ff6600'),
+  'ro-tv-kanald':           makeSVG('Kanal', 'D', '#cc0000'),
+  'ro-tv-kanald2':          makeSVG('Kanal', 'D 2', '#990000'),
+  'ro-tv-las':              makeSVG('Las', 'Fierb.', '#e31e24'),
+  'ro-tv-minimax':          makeSVG('Mini', 'max', '#0099cc'),
+  'ro-tv-nasultv':          makeSVG('Nasul', 'TV', '#333333'),
+  'ro-tv-nationaltv':       makeSVG('National', 'TV', '#003399'),
+  'ro-tv-nationalplus':     makeSVG('National', 'Plus', '#003366'),
+  'ro-tv-nickelodeon':      makeSVG('NICK', null, '#ff6600'),
+  'ro-tv-nickjr':           makeSVG('Nick', 'Jr', '#339900'),
+  'ro-tv-nicktoons':        makeSVG('Nick', 'Toons', '#0066cc'),
+  'ro-tv-nostalgia':        makeSVG('Nostalgia', null, '#663300'),
+  'ro-tv-orizont':          makeSVG('Orizont', 'TV', '#003399'),
+  'ro-tv-paprika':          makeSVG('Paprika', 'TV', '#cc3300'),
+  'ro-tv-procinema':        makeSVG('Pro', 'Cinema', '#e31e24'),
+  'ro-tv-povesti':          makeSVG('Povesti', 'Suflet', '#ff6600'),
+  'ro-tv-realitateaplus':   makeSVG('Real.', 'Plus', '#cc0000'),
+  'ro-tv-realitateastar':   makeSVG('Real.', 'Star', '#990000'),
+  'ro-tv-rofilme':          makeSVG('Ro', 'Filme', '#003399'),
+  'ro-tv-romaniatv':        makeSVG('Romania', 'TV', '#cc0000'),
+  'ro-tv-sky1':             makeSVG('Sky', '1', '#0066cc'),
+  'ro-tv-sky2':             makeSVG('Sky', '2', '#0052a3'),
+  'ro-tv-taralaladan':      makeSVG('Trala', 'la Dan', '#ff6600'),
+  'ro-tv-tralala':          makeSVG('Trala', 'la', '#ff3399'),
+  'ro-tv-tom':              makeSVG('Tom &', 'Jerry', '#cc0000'),
+  'ro-tv-tvr1':             makeSVG('TVR', '1', '#003399'),
+  'ro-tv-tvr2':             makeSVG('TVR', '2', '#003399'),
+  'ro-tv-tvr3':             makeSVG('TVR', '3', '#003399'),
+  'ro-tv-tvrcultural':      makeSVG('TVR', 'Cultural', '#003399'),
+  'ro-tv-tvrinternational': makeSVG('TVR', 'INT', '#003399'),
+  'ro-tv-tvrinfo':          makeSVG('TVR', 'Info', '#cc0000'),
+  'ro-tv-utv':              makeSVG('UTV', null, '#ff6600'),
+  'ro-tv-warner':           makeSVG('Warner', 'TV', '#003399'),
+};
+
 // ─── Start server cu proxy integrat ──────────────────────────────────────────
 const addonRouter = getRouter(builder.getInterface());
 const app = express();
+
+// Logo endpoint - serveste SVG logo-uri
+app.get('/logo/:id', (req, res) => {
+  const svg = LOGOS[req.params.id] || makeSVG('TV', null, '#333333');
+  res.setHeader('Content-Type', 'image/svg+xml');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.end(svg);
+});
 
 // Proxy pe acelasi port
 app.use('/proxy', (req, res) => {
@@ -274,3 +442,5 @@ app.listen(PORT, () => {
   console.log(`\n🇷🇴 TV România Addon pornit! (${CHANNELS.length} canale)`);
   console.log(`➡️  Manifest: ${BASE_URL}/manifest.json\n`);
 });
+
+// NOTE: logos are added in a separate append - this line intentionally empty
